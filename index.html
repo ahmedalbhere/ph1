@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>صيدليتي أونلاين | منصة الأدوية الرقمية</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body>
+    <!-- شريط التنقل -->
+    <nav class="pharmacy-nav">
+        <div class="container">
+            <div class="nav-brand">
+                <img src="https://cdn-icons-png.flaticon.com/512/3142/3142145.png" alt="صيدليتي" class="logo">
+                <h1>صيدليتي <span>أونلاين</span></h1>
+            </div>
+            <div class="nav-icons">
+                <i class="fas fa-prescription-bottle-alt pulse"></i>
+                <i class="fas fa-heartbeat"></i>
+                <i class="fas fa-stethoscope"></i>
+            </div>
+        </div>
+    </nav>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="main-content">
+        <!-- الشاشة الرئيسية -->
+        <section class="container" id="home-screen">
+            <div class="pharmacy-hero">
+                <div class="hero-overlay"></div>
+                <div class="hero-content">
+                    <h2 data-aos="fade-down">صيدليتك بين يديك!</h2>
+                    <p data-aos="fade-down" data-aos-delay="100">ابحث عن أدويتك بسهولة وسرعة</p>
+                    <div class="hero-buttons" data-aos="fade-up" data-aos-delay="200">
+                        <button class="btn btn-client" onclick="showSection('client-login')">
+                            <i class="fas fa-user-md"></i> دخول العميل
+                        </button>
+                        <button class="btn btn-pharmacy" onclick="showSection('pharmacy-login')">
+                            <i class="fas fa-clinic-medical"></i> دخول الصيدلية
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card" data-aos="zoom-in">
+                    <div class="feature-icon">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <h3> مستهدف توصيل سريع</h3>
+                    <p>خلال 24 ساعة فقط</p>
+                </div>
+                <div class="feature-card" data-aos="zoom-in" data-aos-delay="100">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>أدوية أصلية</h3>
+                </div>
+                <div class="feature-card" data-aos="zoom-in" data-aos-delay="200">
+                    <div class="feature-icon">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h3>دعم فني</h3>
+                    <p>متاح 24/7</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- شاشة دخول العميل -->
+        <section class="container hidden" id="client-login">
+            <div class="form-container">
+                <div class="form-header">
+                    <i class="fas fa-user-circle"></i>
+                    <h2>تسجيل دخول العميل</h2>
+                </div>
+                <div class="form-group">
+                    <label for="client-name"><i class="fas fa-user-tag"></i> الاسم الكامل</label>
+                    <input type="text" id="client-name" placeholder="أدخل اسمك بالكامل">
+                </div>
+                <div class="form-group">
+                    <label for="client-phone"><i class="fas fa-mobile-alt"></i> رقم الهاتف</label>
+                    <input type="tel" id="client-phone" placeholder="01XXXXXXXXX" maxlength="11">
+                </div>
+                <div class="form-group">
+                    <label for="client-city"><i class="fas fa-city"></i> المدينة</label>
+                    <input type="text" id="client-city" placeholder="أدخل مدينتك">
+                </div>
+                <div class="form-options">
+                    <label class="checkbox-container">حفظ بياناتي
+                        <input type="checkbox" id="save-client-data">
+                        <span class="checkmark"></span>
+                    </label>
+                </div>
+                <button class="btn btn-primary" onclick="loginClient()">
+                    <i class="fas fa-sign-in-alt"></i> دخول
+                </button>
+                <button class="btn btn-secondary" onclick="showSection('home-screen')">
+                    <i class="fas fa-arrow-right"></i> رجوع
+                </button>
+            </div>
+        </section>
+
+        <!-- شاشة دخول الصيدلية -->
+        <section class="container hidden" id="pharmacy-login">
+            <div class="form-container">
+                <div class="form-header">
+                    <i class="fas fa-clinic-medical"></i>
+                    <h2>تسجيل دخول الصيدلية</h2>
+                </div>
+                <div class="form-group">
+                    <label for="pharmacy-name"><i class="fas fa-sign"></i> اسم الصيدلية</label>
+                    <input type="text" id="pharmacy-name" placeholder="أدخل اسم الصيدلية">
+                </div>
+                <div class="form-group">
+                    <label for="pharmacy-password"><i class="fas fa-lock"></i> كلمة المرور</label>
+                    <input type="password" id="pharmacy-password" placeholder="أدخل كلمة المرور">
+                </div>
+                <div class="form-options">
+                    <label class="checkbox-container">تذكر بيانات الدخول
+                        <input type="checkbox" id="save-pharmacy-data">
+                        <span class="checkmark"></span>
+                    </label>
+                </div>
+                <div class="form-buttons">
+                    <button class="btn btn-primary" onclick="loginPharmacy()">
+                        <i class="fas fa-sign-in-alt"></i> تسجيل دخول
+                    </button>
+                    <button class="btn btn-accent" onclick="registerNewPharmacyPrompt()">
+                        <i class="fas fa-plus-circle"></i> إنشاء حساب جديد
+                    </button>
+                </div>
+                <button class="btn btn-secondary" onclick="showSection('home-screen')">
+                    <i class="fas fa-arrow-right"></i> رجوع
+                </button>
+            </div>
+        </section>
+
+        <!-- لوحة تحكم الصيدلية -->
+        <section class="container hidden" id="pharmacy-panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-clinic-medical"></i> لوحة تحكم الصيدلية</h2>
+                <div id="pharmacy-status" class="status-badge">
+                    <i class="fas fa-store"></i> <span id="status-text">جاري التحميل...</span>
+                </div>
+            </div>
+            <div class="panel-actions">
+                <button class="btn btn-status" onclick="toggleOpen()" id="toggle-status-btn">
+                    <i class="fas fa-power-off"></i> تبديل الحالة
+                </button>
+                <button class="btn btn-primary" onclick="showSection('change-password')">
+                    <i class="fas fa-key"></i> تغيير كلمة المرور
+                </button>
+                <button class="btn btn-secondary" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> تسجيل خروج
+                </button>
+            </div>
+            <div class="requests-container">
+                <h3><i class="fas fa-bell"></i> طلبات الأدوية الجديدة</h3>
+                <div id="requests" class="requests-list"></div>
+            </div>
+        </section>
+
+        <!-- شاشة تغيير كلمة المرور -->
+        <section class="container hidden" id="change-password">
+            <div class="form-container">
+                <div class="form-header">
+                    <i class="fas fa-key"></i>
+                    <h2>تغيير كلمة المرور</h2>
+                </div>
+                <div class="form-group">
+                    <label for="old-password"><i class="fas fa-lock"></i> كلمة المرور الحالية</label>
+                    <input type="password" id="old-password" placeholder="أدخل كلمة المرور الحالية">
+                </div>
+                <div class="form-group">
+                    <label for="new-password"><i class="fas fa-lock-open"></i> كلمة المرور الجديدة</label>
+                    <input type="password" id="new-password" placeholder="أدخل كلمة المرور الجديدة">
+                </div>
+                <button class="btn btn-primary" onclick="changePassword()">
+                    <i class="fas fa-save"></i> حفظ التغييرات
+                </button>
+                <button class="btn btn-secondary" onclick="showSection('pharmacy-panel')">
+                    <i class="fas fa-arrow-right"></i> رجوع
+                </button>
+            </div>
+        </section>
+
+        <!-- لوحة تحكم العميل -->
+        <section class="container hidden" id="client-panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-user-md"></i> مرحباً بك!</h2>
+                <p id="client-info"></p>
+            </div>
+            <div class="search-container">
+                <div class="search-box">
+                    <input type="text" id="search-medicine" placeholder="ابحث عن دواء...">
+                    <button class="btn btn-primary" onclick="searchMedicine()">
+                        <i class="fas fa-search"></i> بحث
+                    </button>
+                </div>
+            </div>
+            <div id="client-results" class="medicine-results"></div>
+            <button class="btn btn-secondary btn-logout" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> تسجيل خروج
+            </button>
+        </section>
+    </main>
+
+    <!-- تذييل الصفحة -->
+    <footer class="pharmacy-footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3142/3142145.png" alt="صيدليتي">
+                    <h3>صيدليتي أونلاين</h3>
+                    <p>منصة رقمية متكاملة لربط العملاء بالصيدليات في جميع أنحاء مصر</p>
+                </div>
+                <div class="footer-links">
+                    <h4>روابط سريعة</h4>
+                    <a href="#" onclick="showSection('home-screen')"><i class="fas fa-home"></i> الصفحة الرئيسية</a>
+                    <a href="#"><i class="fas fa-file-alt"></i> الشروط والأحكام</a>
+                </div>
+                <div class="footer-contact">
+                    <h4>تواصل معنا</h4>
+                    <p><i class="fas fa-phone-alt"></i> 015552732042</p>
+                    <p><i class="fas fa-envelope"></i> ahmed01552732@gmail.com</p>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-x"></i></a>
+                        <a href="=+20 15552732042"><i class="fab fa-whatsapp"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>&copy; احمد جمال</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="app.js"></script>
+    <script>
+        // تهيئة تأثيرات الحركة
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
+        });
+    </script>
+</body>
+</html>
