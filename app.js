@@ -75,6 +75,19 @@ function showSection(id) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// عرض نموذج تسجيل الصيدلية
+function showRegisterForm() {
+    const name = document.getElementById("pharmacy-name").value;
+    const pass = document.getElementById("pharmacy-password").value;
+    const saveData = document.getElementById("save-pharmacy-data").checked;
+    
+    document.getElementById("register-name").value = name || '';
+    document.getElementById("register-password").value = pass || '';
+    document.getElementById("save-register-data").checked = saveData;
+    
+    showSection("pharmacy-register");
+}
+
 // تسجيل دخول العميل
 function loginClient() {
     const name = document.getElementById("client-name").value.trim();
@@ -152,65 +165,45 @@ function loginPharmacy() {
     });
 }
 
-// إنشاء حساب صيدلية جديد
-function registerNewPharmacy() {
-    const name = document.getElementById("pharmacy-name").value.trim();
-    const pass = document.getElementById("pharmacy-password").value.trim();
-    const saveData = document.getElementById("save-pharmacy-data").checked;
+// تسجيل صيدلية جديدة
+function registerPharmacy() {
+    const name = document.getElementById("register-name").value.trim();
+    const pass = document.getElementById("register-password").value.trim();
+    const city = document.getElementById("register-city").value.trim();
+    const location = document.getElementById("register-location").value.trim();
+    const phone = document.getElementById("register-phone").value.trim();
+    const saveData = document.getElementById("save-register-data").checked;
 
-    if (!name || !pass) {
-        showError("الرجاء إدخال اسم الصيدلية وكلمة المرور");
+    if (!name || !pass || !city || !location) {
+        showError("الرجاء ملء جميع الحقول المطلوبة");
         return;
     }
 
-    Swal.fire({
-        title: 'تسجيل صيدلية جديدة',
-        html:
-            '<input id="swal-city" class="swal2-input" placeholder="المدينة">' +
-            '<input id="swal-location" class="swal2-input" placeholder="رابط الموقع على الخريطة">' +
-            '<input id="swal-phone" class="swal2-input" placeholder="رقم الهاتف (اختياري)">',
-        focusConfirm: false,
-        preConfirm: () => {
-            return {
-                city: document.getElementById('swal-city').value,
-                location: document.getElementById('swal-location').value,
-                phone: document.getElementById('swal-phone').value
-            }
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const { city, location, phone } = result.value;
-            
-            if (!city || !location) {
-                showError("المدينة ورابط الموقع مطلوبان");
-                return;
-            }
+    showLoading("جاري إنشاء الحساب...");
 
-            pharmacyId = Date.now().toString();
-            currentUserType = 'pharmacy';
+    pharmacyId = Date.now().toString();
+    currentUserType = 'pharmacy';
 
-            db.ref("pharmacies/" + pharmacyId).set({
-                name,
-                password: pass,
-                city,
-                location,
-                phone: phone || '',
-                isOpen: true,
-                medicines: {},
-                createdAt: firebase.database.ServerValue.TIMESTAMP,
-                lastLogin: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => {
-                if (saveData) {
-                    localStorage.setItem('pharmacyData', JSON.stringify({ name, password: pass }));
-                }
-                
-                showSection("pharmacy-panel");
-                showSuccess(`تم إنشاء حساب جديد للصيدلية ${name}`);
-            }).catch(error => {
-                showError("حدث خطأ أثناء إنشاء الحساب");
-                console.error(error);
-            });
+    db.ref("pharmacies/" + pharmacyId).set({
+        name,
+        password: pass,
+        city,
+        location,
+        phone: phone || '',
+        isOpen: true,
+        medicines: {},
+        createdAt: firebase.database.ServerValue.TIMESTAMP,
+        lastLogin: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+        if (saveData) {
+            localStorage.setItem('pharmacyData', JSON.stringify({ name, password: pass }));
         }
+        
+        showSection("pharmacy-panel");
+        showSuccess(`تم إنشاء حساب جديد للصيدلية ${name}`);
+    }).catch(error => {
+        showError("حدث خطأ أثناء إنشاء الحساب");
+        console.error(error);
     });
 }
 
@@ -318,7 +311,7 @@ function displayMedicineResults(medicineName) {
                         ${p.phone ? `
                         <div class="medicine-info">
                             <i class="fas fa-phone"></i>
-                            <span><a href="tel:${p.phone}">${p.phone}</a></span>
+                            <span>${p.phone}</span>
                         </div>` : ''}
                         <div class="medicine-info">
                             <i class="fas fa-map-marker-alt"></i>
@@ -327,9 +320,10 @@ function displayMedicineResults(medicineName) {
                         <span class="availability-tag available">
                             <i class="fas fa-check-circle"></i> متوفر
                         </span>
-                        <button class="btn btn-call" onclick="window.open('tel:${p.phone || ''}')">
+                        ${p.phone ? `
+                        <button class="btn btn-call" onclick="makeCall('${p.phone}')">
                             <i class="fas fa-phone"></i> اتصل بالصيدلية
-                        </button>
+                        </button>` : ''}
                     </div>
                 </div>`;
             }
@@ -351,6 +345,13 @@ function displayMedicineResults(medicineName) {
 
         resultsContainer.innerHTML = output;
     });
+}
+
+// إجراء مكالمة هاتفية
+function makeCall(phoneNumber) {
+    if (confirm(`هل تريد الاتصال بالصيدلية على الرقم ${phoneNumber}؟`)) {
+        window.open(`tel:${phoneNumber}`);
+    }
 }
 
 // تحديث معلومات العميل
@@ -507,7 +508,7 @@ function listenToRequests() {
                                 <button class="btn btn-secondary" onclick="setAvailability('${req.medicineName}', 'not_available', '${rid}')">
                                     <i class="fas fa-times"></i> غير متوفر
                                 </button>
-                                <button class="btn btn-call" onclick="window.open('tel:${req.phone}')">
+                                <button class="btn btn-call" onclick="makeCall('${req.phone}')">
                                     <i class="fas fa-phone"></i> اتصل
                                 </button>
                             </div>
