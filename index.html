@@ -130,11 +130,53 @@
                     <button class="btn btn-primary" onclick="loginPharmacy()">
                         <i class="fas fa-sign-in-alt"></i> تسجيل دخول
                     </button>
-                    <button class="btn btn-accent" onclick="registerNewPharmacyPrompt()">
+                    <button class="btn btn-accent" onclick="showRegisterForm()">
                         <i class="fas fa-plus-circle"></i> إنشاء حساب جديد
                     </button>
                 </div>
                 <button class="btn btn-secondary" onclick="showSection('home-screen')">
+                    <i class="fas fa-arrow-right"></i> رجوع
+                </button>
+            </div>
+        </section>
+
+        <!-- شاشة تسجيل الصيدلية الجديدة -->
+        <section class="container hidden" id="pharmacy-register">
+            <div class="form-container">
+                <div class="form-header">
+                    <i class="fas fa-clinic-medical"></i>
+                    <h2>تسجيل صيدلية جديدة</h2>
+                </div>
+                <div class="form-group">
+                    <label for="register-name"><i class="fas fa-sign"></i> اسم الصيدلية</label>
+                    <input type="text" id="register-name" placeholder="أدخل اسم الصيدلية">
+                </div>
+                <div class="form-group">
+                    <label for="register-password"><i class="fas fa-lock"></i> كلمة المرور</label>
+                    <input type="password" id="register-password" placeholder="أدخل كلمة المرور">
+                </div>
+                <div class="form-group">
+                    <label for="register-city"><i class="fas fa-city"></i> المدينة</label>
+                    <input type="text" id="register-city" placeholder="أدخل المدينة">
+                </div>
+                <div class="form-group">
+                    <label for="register-location"><i class="fas fa-map-marker-alt"></i> رابط الموقع على الخريطة</label>
+                    <input type="text" id="register-location" placeholder="أدخل رابط الموقع">
+                </div>
+                <div class="form-group">
+                    <label for="register-phone"><i class="fas fa-phone"></i> رقم الهاتف</label>
+                    <input type="tel" id="register-phone" placeholder="أدخل رقم الهاتف">
+                </div>
+                <div class="form-options">
+                    <label class="checkbox-container">تذكر بيانات الدخول
+                        <input type="checkbox" id="save-register-data">
+                        <span class="checkmark"></span>
+                    </label>
+                </div>
+                <button class="btn btn-primary" onclick="registerPharmacy()">
+                    <i class="fas fa-save"></i> تسجيل الحساب
+                </button>
+                <button class="btn btn-secondary" onclick="showSection('pharmacy-login')">
                     <i class="fas fa-arrow-right"></i> رجوع
                 </button>
             </div>
