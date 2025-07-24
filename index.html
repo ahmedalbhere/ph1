@@ -244,6 +244,25 @@
                         <i class="fas fa-search"></i> بحث
                     </button>
                 </div>
+                <div class="search-options">
+                    <label class="radio-container">
+                        <input type="radio" name="search-type" value="text" checked>
+                        <span class="radio-checkmark"></span>
+                        بحث نصي
+                    </label>
+                    <label class="radio-container">
+                        <input type="radio" name="search-type" value="image">
+                        <span class="radio-checkmark"></span>
+                        رفع روشتة
+                    </label>
+                </div>
+                <div id="prescription-upload" style="display: none;">
+                    <input type="file" id="prescription-image" accept="image/*" style="display: none;">
+                    <button class="btn btn-accent" onclick="document.getElementById('prescription-image').click()">
+                        <i class="fas fa-upload"></i> اختر صورة الروشتة
+                    </button>
+                    <div id="prescription-preview" style="margin-top: 10px;"></div>
+                </div>
             </div>
             <div id="client-results" class="medicine-results"></div>
             <button class="btn btn-secondary btn-logout" onclick="logout()">
