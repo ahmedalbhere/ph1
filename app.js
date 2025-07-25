@@ -10,6 +10,7 @@ const db = firebase.database();
 let clientData = {};
 let pharmacyId = null;
 let currentUserType = null;
+let activeRequestListener = null;
 
 // عند تحميل الصفحة
 document.addEventListener('DOMContentLoaded', function() {
@@ -43,6 +44,12 @@ function loadSavedData() {
 
 // عرض القسم المطلوب مع تأثيرات
 function showSection(id) {
+    // إيقاف أي مستمع نشط للطلبات
+    if (activeRequestListener) {
+        db.ref("medicineRequests").off("value", activeRequestListener);
+        activeRequestListener = null;
+    }
+
     // إخفاء جميع الأقسام
     document.querySelectorAll('.container').forEach(el => {
         if (!el.classList.contains('hidden')) {
@@ -115,7 +122,7 @@ function loginClient() {
     }
     
     showSection("client-panel");
-    showSuccess(`مرحباً ${name}! يمكنك الآن البحث عن الصيدليات في مدينة ${city}`);
+    showSuccess(`مرحباً ${name}! يمكنك الآن البحث عن الأدوية في صيدليات مدينة ${city}`);
 }
 
 // تسجيل دخول الصيدلية
@@ -244,124 +251,251 @@ function updatePharmacyStatus() {
     });
 }
 
-// البحث عن الصيدليات
-function searchPharmacies() {
-    const searchTerm = document.getElementById("search-pharmacy").value.trim().toLowerCase();
-    const city = clientData.city;
-
-    if (!city) {
-        showError("الرجاء تحديد المدينة أولاً");
-        return;
-    }
-
-    showLoading("جاري البحث عن الصيدليات...");
-    
-    db.ref("pharmacies").once("value", snap => {
-        const pharmacies = snap.val();
-        let output = '';
-        let foundPharmacies = 0;
-
-        for (let id in pharmacies) {
-            const p = pharmacies[id];
-            
-            // فلترة حسب المدينة والحالة
-            if (p.city === city && p.isOpen) {
-                // فلترة حسب اسم الصيدلية إذا كان هناك بحث
-                if (searchTerm && !p.name.toLowerCase().includes(searchTerm)) {
-                    continue;
-                }
-                
-                foundPharmacies++;
-                
-                output += `
-                <div class="pharmacy-card" data-aos="fade-up">
-                    <div class="pharmacy-header">
-                        <div class="pharmacy-image">
-                            <i class="fas fa-clinic-medical"></i>
-                        </div>
-                        <div class="pharmacy-info">
-                            <h3>${p.name}</h3>
-                            <div class="pharmacy-meta">
-                                <span><i class="fas fa-map-marker-alt"></i> ${p.location ? '<a href="' + p.location + '" target="_blank">عرض الموقع</a>' : 'غير متاح'}</span>
-                                <span><i class="fas fa-phone"></i> ${p.phone || 'غير متاح'}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="pharmacy-search-box">
-                        <input type="text" id="medicine-search-${id}" placeholder="ابحث عن دواء في هذه الصيدلية">
-                        <button class="btn btn-small" onclick="searchMedicineInPharmacy('${id}')">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
-                    
-                    <div id="medicine-result-${id}" class="medicine-result-container"></div>
-                    
-                    <div class="pharmacy-status">
-                        <span class="status-badge status-open">
-                            <i class="fas fa-store"></i> مفتوحة الآن
-                        </span>
-                    </div>
-                </div>`;
-            }
-        }
-
-        if (foundPharmacies === 0) {
-            output = `
-            <div class="no-results">
-                <i class="fas fa-search" style="font-size: 50px; color: #ccc;"></i>
-                <h3>لا توجد صيدليات متاحة</h3>
-                <p>لا توجد صيدليات متاحة حالياً في مدينة ${city}</p>
-            </div>`;
-        }
-
-        document.getElementById("pharmacies-results").innerHTML = output;
-    }).catch(error => {
-        showError("حدث خطأ أثناء البحث عن الصيدليات");
-        console.error(error);
-    });
-}
-
-// البحث عن دواء في صيدلية محددة
-function searchMedicineInPharmacy(pharmacyId) {
-    const medicineName = document.getElementById(`medicine-search-${pharmacyId}`).value.trim();
-    const resultContainer = document.getElementById(`medicine-result-${pharmacyId}`);
-    
+// البحث عن دواء مع نظام الانتظار
+function searchMedicine() {
+    const medicineName = document.getElementById("search-medicine").value.trim();
     if (!medicineName) {
         showError("الرجاء إدخال اسم الدواء");
         return;
     }
 
-    resultContainer.innerHTML = '<div class="spinner"></div>';
-    
-    db.ref(`pharmacies/${pharmacyId}/medicines/${medicineName}`).once("value", snap => {
-        const medicineData = snap.val();
-        let output = '';
+    if (!clientData.city) {
+        showError("الرجاء تحديد المدينة أولاً");
+        return;
+    }
+
+    const requestId = Date.now().toString();
+    const requestData = {
+        medicineName: medicineName,
+        clientName: clientData.name,
+        clientPhone: clientData.phone,
+        city: clientData.city,
+        status: "pending",
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    // عرض حالة الانتظار للعميل
+    const resultsContainer = document.getElementById("client-results");
+    resultsContainer.innerHTML = `
+        <div class="medicine-card">
+            <div class="medicine-details" style="text-align: center;">
+                <div class="spinner-large"></div>
+                <h3>${medicineName}</h3>
+                <p>جاري البحث عن الدواء في صيدليات مدينة ${clientData.city}</p>
+                <div class="request-status pending">
+                    <i class="fas fa-clock"></i> في انتظار رد الصيدليات...
+                </div>
+            </div>
+        </div>
+    `;
+
+    // إرسال طلب البحث إلى قاعدة البيانات
+    db.ref("medicineRequests/" + requestId).set(requestData)
+        .then(() => {
+            // متابعة تحديث حالة الطلب
+            monitorRequestStatus(requestId, medicineName);
+        })
+        .catch(error => {
+            showError("حدث خطأ أثناء إرسال الطلب");
+            console.error(error);
+        });
+}
+
+// متابعة حالة الطلب
+function monitorRequestStatus(requestId, medicineName) {
+    activeRequestListener = db.ref("medicineRequests/" + requestId).on("value", snap => {
+        const request = snap.val();
+        const resultsContainer = document.getElementById("client-results");
         
-        if (medicineData && medicineData.status === 'available') {
-            output = `
-            <div class="medicine-status available">
-                <i class="fas fa-check-circle"></i>
-                <span>${medicineName} - متوفر</span>
-                ${medicineData.price ? `<span class="price">${medicineData.price} ${medicineData.currency || 'EGP'}</span>` : ''}
-            </div>`;
-        } else {
-            output = `
-            <div class="medicine-status not-available">
-                <i class="fas fa-times-circle"></i>
-                <span>${medicineName} - غير متوفر</span>
-            </div>`;
+        if (!request) return;
+
+        if (request.status === "responded") {
+            // عرض النتيجة النهائية
+            let output = '';
+            let availablePharmacies = 0;
+            
+            if (request.responses) {
+                for (let pharmacyId in request.responses) {
+                    const response = request.responses[pharmacyId];
+                    if (response.status === "available") {
+                        availablePharmacies++;
+                        output += `
+                        <div class="medicine-card">
+                            <div class="medicine-details">
+                                <h3>${medicineName}</h3>
+                                <div class="medicine-info">
+                                    <i class="fas fa-clinic-medical"></i>
+                                    <span>${response.pharmacyName || 'صيدلية'}</span>
+                                </div>
+                                ${response.price ? `
+                                <div class="medicine-info">
+                                    <i class="fas fa-tag"></i>
+                                    <span>${response.price} ${response.currency || 'EGP'}</span>
+                                </div>` : ''}
+                                <div class="medicine-info">
+                                    <i class="fas fa-phone"></i>
+                                    <span>${response.pharmacyPhone || 'غير متاح'}</span>
+                                </div>
+                                <div class="request-status available">
+                                    <i class="fas fa-check-circle"></i> متوفر
+                                </div>
+                                ${response.pharmacyPhone ? `
+                                <button class="btn btn-call" onclick="makeCall('${response.pharmacyPhone}')">
+                                    <i class="fas fa-phone"></i> اتصل بالصيدلية
+                                </button>` : ''}
+                            </div>
+                        </div>`;
+                    }
+                }
+            }
+
+            if (availablePharmacies === 0) {
+                output = `
+                <div class="medicine-card">
+                    <div class="medicine-details" style="text-align: center;">
+                        <i class="fas fa-search" style="font-size: 50px; color: #ccc;"></i>
+                        <h3>${medicineName}</h3>
+                        <p>لا توجد صيدليات متاحة حالياً تحتوي على هذا الدواء</p>
+                        <div class="request-status not-available">
+                            <i class="fas fa-times-circle"></i> غير متوفر
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            resultsContainer.innerHTML = output;
+            db.ref("medicineRequests/" + requestId).off("value", activeRequestListener);
+            activeRequestListener = null;
         }
-        
-        resultContainer.innerHTML = output;
-    }).catch(error => {
-        showError("حدث خطأ أثناء البحث عن الدواء");
-        console.error(error);
-        resultContainer.innerHTML = `
-        <div class="medicine-status error">
-            <i class="fas fa-exclamation-triangle"></i>
-            <span>حدث خطأ أثناء البحث</span>
-        </div>`;
+    });
+}
+
+// إدارة طلبات الأدوية للصيدلية
+function listenToRequests() {
+    db.ref("medicineRequests").orderByChild("timestamp").on("value", snap => {
+        const data = snap.val();
+        const container = document.getElementById("requests");
+        container.innerHTML = '';
+
+        db.ref("pharmacies/" + pharmacyId).once("value").then(pharmacySnap => {
+            const pharmacy = pharmacySnap.val();
+            let hasRequests = false;
+
+            for (let rid in data) {
+                const req = data[rid];
+                if (req.city === pharmacy.city && req.status === "pending") {
+                    hasRequests = true;
+                    const requestTime = formatTime(req.timestamp);
+                    
+                    const div = document.createElement("div");
+                    div.className = "medicine-card";
+                    div.innerHTML = `
+                        <div class="medicine-image" style="background: #f0f7fd;">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <div class="medicine-details">
+                            <h3>${req.medicineName}</h3>
+                            <div class="medicine-info">
+                                <i class="fas fa-user"></i>
+                                <span>${req.clientName}</span>
+                            </div>
+                            <div class="medicine-info">
+                                <i class="fas fa-phone"></i>
+                                <span>${req.clientPhone}</span>
+                            </div>
+                            <div class="medicine-info">
+                                <i class="fas fa-clock"></i>
+                                <span>${requestTime}</span>
+                            </div>
+                            <div class="medicine-actions">
+                                <button class="btn btn-primary" onclick="respondToRequest('${rid}', '${req.medicineName}', 'available')">
+                                    <i class="fas fa-check"></i> متوفر
+                                </button>
+                                <button class="btn btn-secondary" onclick="respondToRequest('${rid}', '${req.medicineName}', 'not_available')">
+                                    <i class="fas fa-times"></i> غير متوفر
+                                </button>
+                                <button class="btn btn-call" onclick="makeCall('${req.clientPhone}')">
+                                    <i class="fas fa-phone"></i> اتصل
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                }
+            }
+
+            if (!hasRequests) {
+                container.innerHTML = `
+                <div class="medicine-card">
+                    <div class="medicine-details" style="text-align: center;">
+                        <i class="fas fa-inbox" style="font-size: 50px; color: #ccc;"></i>
+                        <h3>لا توجد طلبات جديدة</h3>
+                        <p>ستظهر هنا أي طلبات جديدة من العملاء في مدينتك</p>
+                    </div>
+                </div>`;
+            }
+        });
+    });
+}
+
+// الرد على طلب العميل
+function respondToRequest(requestId, medicineName, status) {
+    Swal.fire({
+        title: 'تحديث حالة الدواء',
+        html: `
+            <div style="text-align: right;">
+                <p>${medicineName}</p>
+                ${status === 'available' ? `
+                <input id="swal-price" class="swal2-input" placeholder="السعر (اختياري)" type="number">
+                <select id="swal-currency" class="swal2-input">
+                    <option value="EGP">جنيه مصري</option>
+                    <option value="USD">دولار أمريكي</option>
+                    <option value="SAR">ريال سعودي</option>
+                </select>
+                ` : ''}
+            </div>
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'تأكيد',
+        cancelButtonText: 'إلغاء',
+        preConfirm: () => {
+            if (status === 'available') {
+                return {
+                    price: document.getElementById('swal-price').value,
+                    currency: document.getElementById('swal-currency').value
+                }
+            }
+            return {};
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const responseData = {
+                status: status === 'available' ? 'available' : 'not_available',
+                pharmacyId: pharmacyId,
+                pharmacyName: document.getElementById("pharmacy-name").value,
+                pharmacyPhone: document.getElementById("register-phone").value,
+                respondedAt: firebase.database.ServerValue.TIMESTAMP
+            };
+
+            if (result.value && result.value.price) {
+                responseData.price = result.value.price;
+                responseData.currency = result.value.currency;
+            }
+
+            // تحديث حالة الطلب
+            db.ref("medicineRequests/" + requestId).update({
+                status: "responded",
+                responses: {
+                    [pharmacyId]: responseData
+                }
+            }).then(() => {
+                showSuccess("تم إرسال الرد إلى العميل");
+            }).catch(error => {
+                showError("حدث خطأ أثناء إرسال الرد");
+                console.error(error);
+            });
+        }
     });
 }
 
@@ -426,126 +560,9 @@ function changePassword() {
     });
 }
 
-// تحديث حالة توفر الدواء مع السعر
-function setAvailability(medicineName, status, requestId) {
-    Swal.fire({
-        title: 'تحديث حالة الدواء',
-        html: `
-            <div style="text-align: right;">
-                <p>${medicineName}</p>
-                <input id="swal-price" class="swal2-input" placeholder="السعر (اختياري)" type="number">
-                <select id="swal-currency" class="swal2-input">
-                    <option value="EGP">جنيه مصري</option>
-                    <option value="USD">دولار أمريكي</option>
-                    <option value="SAR">ريال سعودي</option>
-                </select>
-            </div>
-        `,
-        focusConfirm: false,
-        showCancelButton: true,
-        confirmButtonText: 'تأكيد',
-        cancelButtonText: 'إلغاء',
-        preConfirm: () => {
-            return {
-                price: document.getElementById('swal-price').value,
-                currency: document.getElementById('swal-currency').value
-            }
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const { price, currency } = result.value;
-            const updateData = {
-                status: status,
-                updatedAt: firebase.database.ServerValue.TIMESTAMP
-            };
-
-            if (price) {
-                updateData.price = price;
-                updateData.currency = currency;
-            }
-
-            db.ref("pharmacies/" + pharmacyId + "/medicines/" + medicineName).set(updateData)
-                .then(() => {
-                    if (requestId) {
-                        db.ref("medicineRequests/" + requestId).remove();
-                    }
-                    showSuccess(`تم تحديث حالة "${medicineName}" إلى ${status === 'available' ? 'متوفر' : 'غير متوفر'}`);
-                })
-                .catch(error => {
-                    showError("حدث خطأ أثناء تحديث حالة الدواء");
-                    console.error(error);
-                });
-        }
-    });
-}
-
-// إدارة طلبات الأدوية للصيدلية
-function listenToRequests() {
-    db.ref("medicineRequests").on("value", snap => {
-        const data = snap.val();
-        const container = document.getElementById("requests");
-        container.innerHTML = '';
-
-        db.ref("pharmacies/" + pharmacyId).once("value").then(pharmacySnap => {
-            const pharmacy = pharmacySnap.val();
-            let hasRequests = false;
-
-            for (let rid in data) {
-                const req = data[rid];
-                if (req.city === pharmacy.city) {
-                    hasRequests = true;
-                    const requestTime = formatTime(req.timestamp);
-                    
-                    const div = document.createElement("div");
-                    div.className = "medicine-card";
-                    div.innerHTML = `
-                        <div class="medicine-image" style="background: #f0f7fd;">
-                            <i class="fas fa-search"></i>
-                        </div>
-                        <div class="medicine-details">
-                            <h3>${req.medicineName}</h3>
-                            <div class="medicine-info">
-                                <i class="fas fa-user"></i>
-                                <span>${req.phone}</span>
-                            </div>
-                            <div class="medicine-info">
-                                <i class="fas fa-clock"></i>
-                                <span>${requestTime}</span>
-                            </div>
-                            <div class="medicine-actions">
-                                <button class="btn btn-primary" onclick="setAvailability('${req.medicineName}', 'available', '${rid}')">
-                                    <i class="fas fa-check"></i> متوفر
-                                </button>
-                                <button class="btn btn-secondary" onclick="setAvailability('${req.medicineName}', 'not_available', '${rid}')">
-                                    <i class="fas fa-times"></i> غير متوفر
-                                </button>
-                                <button class="btn btn-call" onclick="makeCall('${req.phone}')">
-                                    <i class="fas fa-phone"></i> اتصل
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    container.appendChild(div);
-                }
-            }
-
-            if (!hasRequests) {
-                container.innerHTML = `
-                <div class="medicine-card">
-                    <div class="medicine-details" style="text-align: center;">
-                        <i class="fas fa-inbox" style="font-size: 50px; color: #ccc; margin-bottom: 15px;"></i>
-                        <h3>لا توجد طلبات جديدة</h3>
-                        <p>ستظهر هنا أي طلبات جديدة من العملاء في مدينتك</p>
-                    </div>
-                </div>`;
-            }
-        });
-    });
-}
-
 // إجراء مكالمة هاتفية
 function makeCall(phoneNumber) {
-    if (confirm(`هل تريد الاتصال بالصيدلية على الرقم ${phoneNumber}؟`)) {
+    if (confirm(`هل تريد الاتصال على الرقم ${phoneNumber}؟`)) {
         window.open(`tel:${phoneNumber}`);
     }
 }
@@ -559,6 +576,13 @@ function logout() {
     pharmacyId = null;
     clientData = {};
     currentUserType = null;
+    
+    // إيقاف أي مستمع نشط للطلبات
+    if (activeRequestListener) {
+        db.ref("medicineRequests").off("value", activeRequestListener);
+        activeRequestListener = null;
+    }
+    
     showSection('home-screen');
     showSuccess("تم تسجيل الخروج بنجاح");
 }
