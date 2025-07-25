@@ -201,9 +201,24 @@
                     <i class="fas fa-sign-out-alt"></i> تسجيل خروج
                 </button>
             </div>
-            <div class="requests-container">
-                <h3><i class="fas fa-bell"></i> طلبات الأدوية الجديدة</h3>
-                <div id="requests" class="requests-list"></div>
+            <div class="pharmacy-medicines">
+                <h3><i class="fas fa-pills"></i> إدارة الأدوية</h3>
+                <div class="medicine-form">
+                    <input type="text" id="add-medicine-name" placeholder="اسم الدواء">
+                    <select id="add-medicine-status">
+                        <option value="available">متوفر</option>
+                        <option value="not_available">غير متوفر</option>
+                    </select>
+                    <input type="number" id="add-medicine-price" placeholder="السعر">
+                    <select id="add-medicine-currency">
+                        <option value="EGP">جنيه مصري</option>
+                        <option value="USD">دولار أمريكي</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="addMedicine()">
+                        <i class="fas fa-plus"></i> إضافة/تحديث
+                    </button>
+                </div>
+                <div id="medicines-list" class="medicines-list"></div>
             </div>
         </section>
 
@@ -240,14 +255,32 @@
             
             <div class="search-container">
                 <div class="search-box">
-                    <input type="text" id="search-medicine" placeholder="ابحث عن دواء...">
-                    <button class="btn btn-primary" onclick="searchMedicine()">
+                    <input type="text" id="search-pharmacy" placeholder="ابحث عن صيدلية...">
+                    <button class="btn btn-primary" onclick="searchPharmacies()">
                         <i class="fas fa-search"></i> بحث
                     </button>
                 </div>
             </div>
             
-            <div id="client-results" class="medicine-results"></div>
+            <div id="pharmacies-results" class="pharmacies-results"></div>
+            
+            <div id="pharmacy-details" class="hidden">
+                <div class="pharmacy-header">
+                    <h3 id="selected-pharmacy-name"></h3>
+                    <button class="btn btn-secondary" onclick="backToPharmacies()">
+                        <i class="fas fa-arrow-right"></i> رجوع للصيدليات
+                    </button>
+                </div>
+                <div class="search-container">
+                    <div class="search-box">
+                        <input type="text" id="search-medicine-in-pharmacy" placeholder="ابحث عن دواء في هذه الصيدلية">
+                        <button class="btn btn-primary" onclick="searchMedicineInPharmacy()">
+                            <i class="fas fa-search"></i> بحث
+                        </button>
+                    </div>
+                </div>
+                <div id="medicine-results" class="medicine-results"></div>
+            </div>
             
             <button class="btn btn-secondary btn-logout" onclick="logout()">
                 <i class="fas fa-sign-out-alt"></i> تسجيل خروج
