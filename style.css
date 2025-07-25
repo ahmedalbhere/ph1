@@ -389,6 +389,11 @@ body {
     background: #3e8e41;
 }
 
+.btn-small {
+    padding: 10px 15px;
+    font-size: 14px;
+}
+
 /* لوحة التحكم */
 .panel-header {
     text-align: center;
@@ -438,6 +443,15 @@ body {
     color: white;
 }
 
+.client-info {
+    background: var(--card-color);
+    padding: 15px;
+    border-radius: var(--border-radius);
+    margin: 20px auto;
+    max-width: 500px;
+    box-shadow: var(--box-shadow);
+}
+
 .client-info-item {
     display: flex;
     align-items: center;
@@ -457,7 +471,8 @@ body {
     align-items: center;
 }
 
-#search-medicine {
+#search-medicine,
+#search-pharmacy {
     flex: 1;
     padding: 15px 20px;
     border: 2px solid var(--primary-color);
@@ -467,96 +482,152 @@ body {
     box-shadow: 0 4px 10px rgba(74, 137, 220, 0.2);
 }
 
-#search-medicine:focus {
+#search-medicine:focus,
+#search-pharmacy:focus {
     outline: none;
     border-color: var(--secondary-color);
     box-shadow: 0 0 0 4px rgba(59, 175, 218, 0.3);
 }
 
-.medicine-results {
+/* نتائج الصيدليات */
+.pharmacies-results {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 25px;
     margin: 30px 0;
 }
 
-.medicine-card {
+.pharmacy-card {
     background: var(--card-color);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     overflow: hidden;
     transition: var(--transition);
+    padding: 20px;
 }
 
-.medicine-card:hover {
+.pharmacy-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
 }
 
-.medicine-image {
-    height: 180px;
+.pharmacy-header {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.pharmacy-image {
+    width: 60px;
+    height: 60px;
     background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--primary-color);
-    font-size: 60px;
+    font-size: 24px;
 }
 
-.medicine-details {
-    padding: 20px;
+.pharmacy-info {
+    flex: 1;
 }
 
-.medicine-details h3 {
-    font-size: 20px;
-    margin-bottom: 10px;
+.pharmacy-info h3 {
+    margin: 0 0 5px 0;
     color: var(--text-color);
 }
 
-.medicine-info {
+.pharmacy-meta {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 8px;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 14px;
     color: #666;
 }
 
-.medicine-info i {
+.pharmacy-meta i {
+    margin-left: 5px;
     color: var(--primary-color);
-    width: 20px;
-    text-align: center;
 }
 
-.medicine-actions {
+.pharmacy-search-box {
     display: flex;
     gap: 10px;
-    margin-top: 15px;
+    margin: 15px 0;
 }
 
-.availability-tag {
-    display: inline-block;
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 14px;
+.pharmacy-search-box input {
+    flex: 1;
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    font-size: 16px;
+}
+
+.pharmacy-search-box input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.medicine-result-container {
+    margin: 10px 0;
+    min-height: 50px;
+}
+
+.medicine-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    border-radius: var(--border-radius);
     font-weight: 600;
-    margin-top: 10px;
 }
 
-.available {
+.medicine-status.available {
     background: #e8f8f5;
     color: var(--success-color);
 }
 
-.not-available {
+.medicine-status.not-available {
     background: #fdedec;
     color: var(--error-color);
 }
 
-.requests-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
+.medicine-status.error {
+    background: #fef9e7;
+    color: var(--warning-color);
+}
+
+.medicine-status .price {
+    margin-right: auto;
+    color: var(--text-color);
+}
+
+.pharmacy-status {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+    text-align: center;
+}
+
+.no-results {
+    text-align: center;
+    padding: 40px 20px;
+    grid-column: 1 / -1;
+}
+
+.no-results i {
+    margin-bottom: 15px;
+}
+
+.no-results h3 {
+    margin-bottom: 10px;
+    color: var(--text-color);
+}
+
+.no-results p {
+    color: #666;
 }
 
 /* الرسائل العائمة */
@@ -737,13 +808,16 @@ body {
 
 .dark-mode .feature-card,
 .dark-mode .form-container,
-.dark-mode .medicine-card {
+.dark-mode .medicine-card,
+.dark-mode .pharmacy-card,
+.dark-mode .client-info {
     background: var(--card-color);
     color: var(--light-text);
 }
 
 .dark-mode .feature-card p,
-.dark-mode .medicine-info {
+.dark-mode .medicine-info,
+.dark-mode .pharmacy-meta {
     color: #ccc;
 }
 
@@ -753,61 +827,30 @@ body {
     border-color: #444;
 }
 
-/* خيارات البحث */
-.search-options {
-    display: flex;
-    gap: 20px;
-    margin: 15px 0;
-    justify-content: center;
-}
-
-.radio-container {
-    display: flex;
-    align-items: center;
-    position: relative;
-    padding-right: 30px;
-    cursor: pointer;
-    user-select: none;
-}
-
-.radio-container input {
-    position: absolute;
-    opacity: 0;
-    cursor: pointer;
-}
-
-.radio-checkmark {
-    position: absolute;
-    top: 0;
-    right: 0;
-    height: 20px;
-    width: 20px;
-    background-color: #eee;
-    border-radius: 50%;
-    transition: var(--transition);
-}
-
-.radio-container:hover .radio-checkmark {
-    background-color: #ddd;
-}
-
-.radio-container input:checked ~ .radio-checkmark {
-    background-color: var(--primary-color);
-}
-
-.radio-checkmark:after {
-    content: "";
-    position: absolute;
-    display: none;
-}
-
-.radio-container input:checked ~ .radio-checkmark:after {
-    display: block;
-}
-
-.radio-container .radio-checkmark:after {
-    top: 6px;
-    left: 6px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+/* التصميم للهواتف */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+    
+    .pharmacy-nav h1 {
+        font-size: 20px;
+    }
+    
+    .pharmacy-hero {
+        height: 250px;
+    }
+    
+    .hero-content h2 {
+        font-size: 28px;
+    }
+    
+    .hero-buttons {
+        flex-direction: column;
+    }
+    
+    .panel-actions {
+        flex-direction: column;
+    }
+    
+    .btn {
